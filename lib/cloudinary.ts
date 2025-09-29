@@ -41,6 +41,10 @@ export async function uploadToCloudinary(
   file: Buffer | string,
   options: CloudinaryUploadOptions = {}
 ): Promise<CloudinaryUploadResult> {
+  if (!validateCloudinaryConfig()) {
+    throw new Error('Cloudinary configuration is missing. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your .env file.')
+  }
+
   try {
     const uploadOptions = {
       resource_type: 'image' as const,

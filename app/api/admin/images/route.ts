@@ -177,25 +177,42 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Upload to Cloudinary
-    const cloudinaryResult = await uploadToCloudinary(buffer, {
-      folder: 'admin-panel/images',
-      tags: ['admin-panel', ...validatedData.tags],
-    })
-
-    // Generate thumbnail URL
-    const thumbnailUrl = generateThumbnailUrl(cloudinaryResult.public_id, 300, 300)
+    // Try Cloudinary first, fallback to local storage
+    let uploadResult
+    let thumbnailUrl
+    
+    try {
+      // Upload to Cloudinary
+      uploadResult = await uploadToCloudinary(buffer, {
+        folder: 'admin-panel/images',
+        tags: ['admin-panel', ...validatedData.tags],
+      })
+      
+      // Generate thumbnail URL
+      thumbnailUrl = generateThumbnailUrl(uploadResult.public_id, 300, 300)
+    } catch (cloudinaryError) {
+      console.warn('Cloudinary upload failed, using local storage:', cloudinaryError)
+      
+      // Fallback to local storage
+      const { uploadToLocalStorage, generateLocalThumbnailUrl } = await import('@/lib/local-storage')
+      uploadResult = await uploadToLocalStorage(buffer, {
+        folder: 'admin-panel/images',
+        tags: ['admin-panel', ...validatedData.tags],
+      })
+      
+      thumbnailUrl = generateLocalThumbnailUrl(uploadResult.public_id, 300, 300)
+    }
 
     // Save to database
     const image = await prisma.image.create({
       data: {
         title: validatedData.title,
         description: validatedData.description,
-        tags: validatedData.tags,
-        cloudinaryId: cloudinaryResult.public_id,
+        tags: validatedData.tags.join(', '),
+        cloudinaryId: uploadResult.public_id,
         thumbnailUrl,
-        originalUrl: cloudinaryResult.secure_url,
-        fileSize: cloudinaryResult.bytes,
+        originalUrl: uploadResult.secure_url,
+        fileSize: uploadResult.bytes,
         categoryId: validatedData.categoryId,
         uploadedById: session.user.id,
       },
