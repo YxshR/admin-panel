@@ -184,18 +184,39 @@ export default function ImageUploadForm({
             if (xhr.status >= 200 && xhr.status < 300 && result.success) {
               resolve(result.data)
             } else {
-              reject(new Error(result.error || 'Upload failed'))
+              // Provide more detailed error information
+              let errorMessage = result.error || 'Upload failed'
+              if (result.details) {
+                if (Array.isArray(result.details)) {
+                  // Validation errors
+                  errorMessage += ': ' + result.details.map((d: any) => d.message).join(', ')
+                } else if (typeof result.details === 'string') {
+                  errorMessage += ': ' + result.details
+                } else if (typeof result.details === 'object') {
+                  // Multiple error sources
+                  const detailMessages = Object.entries(result.details)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(', ')
+                  errorMessage += ': ' + detailMessages
+                }
+              }
+              reject(new Error(errorMessage))
             }
           } catch (error) {
-            reject(new Error('Invalid response from server'))
+            reject(new Error('Invalid response from server. Please check your network connection.'))
           }
         })
 
         xhr.addEventListener('error', () => {
-          reject(new Error('Network error during upload'))
+          reject(new Error('Network error during upload. Please check your internet connection.'))
+        })
+
+        xhr.addEventListener('timeout', () => {
+          reject(new Error('Upload timeout. Please try again with a smaller file.'))
         })
 
         xhr.open('POST', '/api/admin/images')
+        xhr.timeout = 60000 // 60 second timeout
         xhr.send(formData)
       })
 

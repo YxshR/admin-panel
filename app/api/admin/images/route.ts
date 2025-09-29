@@ -118,8 +118,17 @@ export async function GET(request: NextRequest) {
  * POST /api/admin/images - Upload new image
  */
 export async function POST(request: NextRequest) {
+  console.log('🚀 Image upload request started')
+  
   try {
     const session = await getServerSession(authOptions)
+
+    console.log('Session debug:', { 
+      hasSession: !!session, 
+      hasUser: !!session?.user, 
+      userId: session?.user?.id,
+      userEmail: session?.user?.email 
+    })
 
     if (!session?.user) {
       return NextResponse.json(
@@ -128,14 +137,61 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const formData = await request.formData()
+    // Get user ID from session, fallback to email lookup if needed
+    let userId = session.user.id
+    if (!userId && session.user.email) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { email: session.user.email },
+          select: { id: true }
+        })
+        if (user) {
+          userId = user.id
+        }
+      } catch (error) {
+        console.error('Error finding user by email:', error)
+      }
+    }
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'User ID not found in session. Please log out and log in again.' },
+        { status: 401 }
+      )
+    }
+
+    let formData
+    try {
+      console.log('📝 Parsing form data...')
+      formData = await request.formData()
+      console.log('✅ Form data parsed successfully')
+    } catch (error) {
+      console.error('❌ FormData parsing error:', error)
+      return NextResponse.json(
+        { success: false, error: 'Invalid form data. Please ensure you are sending a proper multipart/form-data request.' },
+        { status: 400 }
+      )
+    }
+
     const file = formData.get('file') as File
     const title = formData.get('title') as string
     const description = formData.get('description') as string
     const categoryId = formData.get('categoryId') as string
     const tagsString = formData.get('tags') as string
 
+    console.log('📋 Form data extracted:', {
+      hasFile: !!file,
+      fileName: file?.name,
+      fileSize: file?.size,
+      fileType: file?.type,
+      title,
+      categoryId,
+      hasDescription: !!description,
+      hasTags: !!tagsString
+    })
+
     if (!file) {
+      console.error('❌ No file provided in form data')
       return NextResponse.json(
         { success: false, error: 'No file provided' },
         { status: 400 }
@@ -154,34 +210,46 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate form data
+    console.log('🔍 Validating form data...')
     const validatedData = imageUploadSchema.parse({
       title,
       description: description || undefined,
       tags,
       categoryId,
     })
+    console.log('✅ Form data validation passed')
 
     // Verify category exists
+    console.log('🏷️ Verifying category exists...')
     const category = await prisma.category.findUnique({
       where: { id: validatedData.categoryId }
     })
 
     if (!category) {
+      console.error('❌ Category not found:', validatedData.categoryId)
       return NextResponse.json(
         { success: false, error: 'Category not found' },
         { status: 400 }
       )
     }
+    console.log('✅ Category verified:', category.name)
 
     // Convert file to buffer
+    console.log('🔄 Converting file to buffer...')
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
+    console.log('✅ File converted to buffer:', buffer.length, 'bytes')
 
     // Try Cloudinary first, fallback to local storage
     let uploadResult
     let thumbnailUrl
 
     try {
+      // Check Cloudinary configuration first
+      if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+        throw new Error('Cloudinary configuration missing')
+      }
+
       // Upload to Cloudinary
       uploadResult = await uploadToCloudinary(buffer, {
         folder: 'admin-panel/images',
@@ -190,20 +258,52 @@ export async function POST(request: NextRequest) {
 
       // Generate thumbnail URL
       thumbnailUrl = generateThumbnailUrl(uploadResult.public_id, 300, 300)
+      
+      console.log('Cloudinary upload successful:', { 
+        publicId: uploadResult.public_id, 
+        size: uploadResult.bytes 
+      })
     } catch (cloudinaryError) {
       console.warn('Cloudinary upload failed, using local storage:', cloudinaryError)
 
-      // Fallback to local storage
-      const { uploadToLocalStorage, generateLocalThumbnailUrl } = await import('@/lib/local-storage')
-      uploadResult = await uploadToLocalStorage(buffer, {
-        folder: 'admin-panel/images',
-        tags: ['admin-panel', validatedData.tags].filter(Boolean),
-      })
+      try {
+        // Fallback to local storage
+        const { uploadToLocalStorage, generateLocalThumbnailUrl } = await import('@/lib/local-storage')
+        uploadResult = await uploadToLocalStorage(buffer, {
+          folder: 'admin-panel/images',
+          tags: ['admin-panel', validatedData.tags].filter(Boolean),
+        })
 
-      thumbnailUrl = generateLocalThumbnailUrl(uploadResult.public_id, 300, 300)
+        thumbnailUrl = generateLocalThumbnailUrl(uploadResult.public_id, 300, 300)
+        
+        console.log('Local storage upload successful:', { 
+          publicId: uploadResult.public_id, 
+          size: uploadResult.bytes 
+        })
+      } catch (localError) {
+        console.error('Both Cloudinary and local storage failed:', { cloudinaryError, localError })
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Failed to upload image to both cloud and local storage',
+            details: {
+              cloudinary: cloudinaryError instanceof Error ? cloudinaryError.message : 'Unknown error',
+              localStorage: localError instanceof Error ? localError.message : 'Unknown error'
+            }
+          },
+          { status: 500 }
+        )
+      }
     }
 
     // Save to database
+    console.log('Saving image to database:', {
+      title: validatedData.title,
+      categoryId: validatedData.categoryId,
+      userId,
+      fileSize: uploadResult.bytes
+    })
+
     const image = await prisma.image.create({
       data: {
         title: validatedData.title,
@@ -214,7 +314,7 @@ export async function POST(request: NextRequest) {
         originalUrl: uploadResult.secure_url,
         fileSize: uploadResult.bytes,
         categoryId: validatedData.categoryId,
-        uploadedById: session.user.id,
+        uploadedById: userId,
       },
       include: {
         category: {
@@ -233,19 +333,24 @@ export async function POST(request: NextRequest) {
     })
 
     // Log activity
-    await prisma.activityLog.create({
-      data: {
-        action: 'IMAGE_UPLOAD',
-        details: {
+    try {
+      await prisma.activityLog.create({
+        data: {
+          action: 'IMAGE_UPLOAD',
+          details: {
+            imageId: image.id,
+            title: image.title,
+            categoryId: image.categoryId,
+            fileSize: image.fileSize,
+          },
+          userId: userId,
           imageId: image.id,
-          title: image.title,
-          categoryId: image.categoryId,
-          fileSize: image.fileSize,
-        },
-        userId: session.user.id,
-        imageId: image.id,
-      }
-    })
+        }
+      })
+    } catch (activityLogError) {
+      console.warn('Failed to create activity log:', activityLogError)
+      // Don't fail the upload if activity logging fails
+    }
 
     return NextResponse.json({
       success: true,
@@ -261,14 +366,40 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: 'Validation failed',
-          details: error.issues
+          details: error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message
+          }))
         },
         { status: 400 }
       )
     }
 
+    // Handle specific database errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      const dbError = error as any
+      if (dbError.code === 'P2002') {
+        return NextResponse.json(
+          { success: false, error: 'An image with this Cloudinary ID already exists' },
+          { status: 409 }
+        )
+      }
+      if (dbError.code === 'P2003') {
+        return NextResponse.json(
+          { success: false, error: 'Invalid category or user reference' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Return more specific error message
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
     return NextResponse.json(
-      { success: false, error: 'Failed to upload image' },
+      { 
+        success: false, 
+        error: 'Failed to upload image',
+        details: errorMessage
+      },
       { status: 500 }
     )
   }

@@ -156,6 +156,15 @@ export const adminImageUploadSchema = z.object({
     .refine(
       file => ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'].includes(file.type),
       'File must be a valid image (JPEG, PNG, WebP, or GIF)'
+    )
+    .refine(
+      file => {
+        // Additional filename validation
+        const filename = file.name.toLowerCase()
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif']
+        return allowedExtensions.some(ext => filename.endsWith(ext))
+      },
+      'File extension must match content type'
     ),
   title: sanitizedString(1, 200),
   description: sanitizedString(0, 1000).optional(),

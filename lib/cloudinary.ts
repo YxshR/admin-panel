@@ -50,7 +50,7 @@ export async function uploadToCloudinary(
       resource_type: 'image' as const,
       folder: options.folder || 'admin-panel',
       quality: options.quality || 'auto',
-      format: options.format || 'auto',
+      upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
       ...options,
     }
 
@@ -92,7 +92,6 @@ export function generateThumbnailUrl(
     height,
     crop: 'fill',
     quality: 'auto',
-    format: 'auto',
   })
 }
 
@@ -111,7 +110,6 @@ export function generateOptimizedUrl(
 ): string {
   return cloudinary.url(publicId, {
     quality: options.quality || 'auto',
-    format: options.format || 'auto',
     width: options.width,
     height: options.height,
     crop: options.crop || 'scale',

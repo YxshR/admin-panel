@@ -89,5 +89,15 @@ export function generateLocalThumbnailUrl(
   // For local storage, we'll return the original URL
   // In a real implementation, you'd want to generate actual thumbnails
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  return publicId.startsWith('http') ? publicId : `${baseUrl}/${publicId}`
+  
+  if (publicId.startsWith('http')) {
+    return publicId
+  }
+  
+  // Extract the filename from public_id (e.g., "admin-panel/images/1759138943086_aacb8ca8" -> "1759138943086_aacb8ca8.jpg")
+  const parts = publicId.split('/')
+  const filename = parts[parts.length - 1]
+  const folder = parts.slice(0, -1).join('/')
+  
+  return `${baseUrl}/uploads/${folder}/${filename}.jpg`
 }
