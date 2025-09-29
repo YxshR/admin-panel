@@ -27,7 +27,7 @@ const imageUploadSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause for filtering
     const where: any = {}
-    
+
     if (params.search) {
       where.OR = [
         { title: { contains: params.search, mode: 'insensitive' } },
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         { tags: { hasSome: [params.search] } },
       ]
     }
-    
+
     if (params.categoryId) {
       where.categoryId = params.categoryId
     }
@@ -120,10 +120,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized - Please log in to upload images' },
         { status: 401 }
       )
     }
@@ -180,26 +180,26 @@ export async function POST(request: NextRequest) {
     // Try Cloudinary first, fallback to local storage
     let uploadResult
     let thumbnailUrl
-    
+
     try {
       // Upload to Cloudinary
       uploadResult = await uploadToCloudinary(buffer, {
         folder: 'admin-panel/images',
         tags: ['admin-panel', validatedData.tags].filter(Boolean),
       })
-      
+
       // Generate thumbnail URL
       thumbnailUrl = generateThumbnailUrl(uploadResult.public_id, 300, 300)
     } catch (cloudinaryError) {
       console.warn('Cloudinary upload failed, using local storage:', cloudinaryError)
-      
+
       // Fallback to local storage
       const { uploadToLocalStorage, generateLocalThumbnailUrl } = await import('@/lib/local-storage')
       uploadResult = await uploadToLocalStorage(buffer, {
         folder: 'admin-panel/images',
         tags: ['admin-panel', validatedData.tags].filter(Boolean),
       })
-      
+
       thumbnailUrl = generateLocalThumbnailUrl(uploadResult.public_id, 300, 300)
     }
 
@@ -255,13 +255,13 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error uploading image:', error)
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: 'Validation failed',
-          details: error.issues 
+          details: error.issues
         },
         { status: 400 }
       )
