@@ -76,32 +76,24 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <head>
-        {/* Preconnect to external domains */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://wa.me" />
         
-        {/* DNS prefetch for performance */}
         <link rel="dns-prefetch" href="https://api.whatsapp.com" />
         
-        {/* Favicon and app icons */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         
-        {/* Theme color */}
         <meta name="theme-color" content="#000000" />
         <meta name="color-scheme" content="dark light" />
         
-        {/* Performance hints */}
         <meta httpEquiv="x-dns-prefetch-control" content="on" />
         
-        {/* Security headers (backup for middleware) */}
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
         <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
-        
-        {/* Structured data for SEO */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -126,7 +118,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
         suppressHydrationWarning={true}
       >
-        {/* Skip to main content for accessibility */}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-md z-50"
@@ -140,13 +131,11 @@ export default function RootLayout({
           </div>
         </Providers>
         
-        {/* Performance monitoring script */}
         {process.env.NODE_ENV === 'development' && (
           <script
             dangerouslySetInnerHTML={{
               __html: `
                 if (typeof window !== 'undefined') {
-                  // Log performance metrics in development
                   window.addEventListener('load', () => {
                     setTimeout(() => {
                       const perfData = performance.getEntriesByType('navigation')[0];

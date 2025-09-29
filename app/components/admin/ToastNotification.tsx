@@ -114,7 +114,6 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
   const [isRemoving, setIsRemoving] = useState(false)
 
   useEffect(() => {
-    // Trigger entrance animation
     const timer = setTimeout(() => setIsVisible(true), 10)
     return () => clearTimeout(timer)
   }, [])
@@ -229,7 +228,6 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
   )
 }
 
-// Convenience hooks for different toast types
 export function useSuccessToast() {
   const { addToast } = useToast()
   return (title: string, message?: string, options?: Partial<Toast>) =>

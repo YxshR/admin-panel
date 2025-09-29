@@ -249,14 +249,14 @@ async function handleBulkAddTags(imageIds: string[], tagsToAdd: string[], userId
     })
 
     if (image) {
-      const existingTags = image.tags || []
+      const existingTags = image.tags ? image.tags.split(',').map(tag => tag.trim()).filter(Boolean) : []
       const newTags = [...new Set([...existingTags, ...tagsToAdd])]
 
       if (newTags.length > existingTags.length) {
         await prisma.image.update({
           where: { id: imageId },
           data: {
-            tags: newTags,
+            tags: newTags.join(', '),
             updatedAt: new Date(),
           }
         })
@@ -298,14 +298,14 @@ async function handleBulkRemoveTags(imageIds: string[], tagsToRemove: string[], 
     })
 
     if (image) {
-      const existingTags = image.tags || []
+      const existingTags = image.tags ? image.tags.split(',').map(tag => tag.trim()).filter(Boolean) : []
       const newTags = existingTags.filter(tag => !tagsToRemove.includes(tag))
 
       if (newTags.length < existingTags.length) {
         await prisma.image.update({
           where: { id: imageId },
           data: {
-            tags: newTags,
+            tags: newTags.join(', '),
             updatedAt: new Date(),
           }
         })

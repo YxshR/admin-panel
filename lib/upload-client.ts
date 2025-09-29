@@ -21,7 +21,6 @@ export async function uploadFile(
 ): Promise<UploadResponse> {
   const { folder = 'general', onProgress, optimize = true, thumbnail = false } = options
 
-  // Create form data
   const formData = new FormData()
   formData.append('file', file)
   formData.append('folder', folder)
@@ -29,12 +28,9 @@ export async function uploadFile(
   if (thumbnail) formData.append('thumbnail', 'true')
 
   try {
-    // Create XMLHttpRequest for progress tracking
     if (onProgress) {
       return uploadWithProgress(formData, onProgress)
     }
-
-    // Use fetch for simple upload
     const response = await fetch('/api/upload', {
       method: 'POST',
       body: formData,

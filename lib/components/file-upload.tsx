@@ -123,7 +123,6 @@ export function FileUpload({
   const removePreview = useCallback((id: string) => {
     setPreviewFiles(prev => {
       const updated = prev.filter(p => p.id !== id)
-      // Revoke URL for removed preview
       const removed = prev.find(p => p.id === id)
       if (removed) {
         revokeImagePreview(removed.preview)

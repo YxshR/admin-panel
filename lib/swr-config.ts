@@ -3,13 +3,11 @@
 import { SWRConfiguration } from 'swr'
 import { apiClient } from './api-client'
 
-// Default fetcher function for SWR
 export const fetcher = async (url: string) => {
   try {
     const response = await apiClient.get(url)
     return response
   } catch (error) {
-    // Transform API errors for SWR
     if (error instanceof Error) {
       throw error
     }
@@ -17,30 +15,19 @@ export const fetcher = async (url: string) => {
   }
 }
 
-// SWR configuration with caching and revalidation settings
 export const swrConfig: SWRConfiguration = {
   fetcher,
-  // Cache for 5 minutes by default
   dedupingInterval: 5 * 60 * 1000,
-  // Revalidate on focus after 30 seconds
   focusThrottleInterval: 30 * 1000,
-  // Retry on error with exponential backoff
   errorRetryCount: 3,
   errorRetryInterval: 1000,
-  // Revalidate on reconnect
   revalidateOnReconnect: true,
-  // Revalidate on focus for fresh data
   revalidateOnFocus: true,
-  // Don't revalidate if data is fresh (within 30 seconds)
   revalidateIfStale: true,
-  // Keep previous data while revalidating
   keepPreviousData: true,
-  // Global error handler
   onError: (error, key) => {
     console.error('SWR Error:', { error, key })
-    // You can add error reporting here (e.g., Sentry)
   },
-  // Global success handler for debugging
   onSuccess: (data, key) => {
     if (process.env.NODE_ENV === 'development') {
       console.log('SWR Success:', { key, dataSize: JSON.stringify(data).length })

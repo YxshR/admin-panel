@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-// Common validation schemas
 export const commonValidations = {
   email: z.string().email('Please enter a valid email address'),
   password: z.string()
@@ -28,7 +27,6 @@ export const commonValidations = {
     .or(z.literal('')),
 }
 
-// File validation
 export const fileValidation = {
   image: z.instanceof(File)
     .refine(file => file.size <= 10 * 1024 * 1024, 'File size must be less than 10MB')
@@ -44,7 +42,6 @@ export const fileValidation = {
     )
 }
 
-// Form-specific schemas
 export const imageUploadSchema = z.object({
   title: commonValidations.title,
   description: commonValidations.description,

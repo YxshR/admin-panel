@@ -34,10 +34,8 @@ export default function ImageSlider({
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
 
-  // Fetch slider content from CMS
   const { slider: cmsSlider, loading, error } = useSlider()
 
-  // Default content for development/fallback
   const defaultContent: SliderContent = {
     id: 'default',
     heading: 'Discover Amazing AI Reels',
@@ -49,12 +47,10 @@ export default function ImageSlider({
     ]
   }
 
-  // Use provided content, CMS content, or default content in that order
   const sliderContent = content || cmsSlider || defaultContent
   const images = sliderContent.images.sort((a, b) => a.order - b.order)
   const totalImages = images.length
 
-  // Auto-rotation logic
   const nextSlide = useCallback(() => {
     if (totalImages > 0) {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % totalImages)
@@ -71,7 +67,6 @@ export default function ImageSlider({
     setCurrentIndex(index)
   }, [])
 
-  // Auto-rotation effect
   useEffect(() => {
     if (!isAutoPlaying || totalImages <= 1) return
 
@@ -79,7 +74,6 @@ export default function ImageSlider({
     return () => clearInterval(interval)
   }, [isAutoPlaying, nextSlide, autoRotateInterval, totalImages])
 
-  // Touch/swipe handling
   const minSwipeDistance = 50
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -105,11 +99,9 @@ export default function ImageSlider({
       prevSlide()
     }
 
-    // Resume auto-rotation after a delay
     setTimeout(() => setIsAutoPlaying(true), 3000)
   }
 
-  // Handle mouse events for desktop
   const handleMouseEnter = () => {
     setIsAutoPlaying(false)
   }
@@ -133,7 +125,6 @@ export default function ImageSlider({
     )
   }
 
-  // Error state (still show default content)
   if (error && !content) {
     console.warn('Slider error:', error)
   }

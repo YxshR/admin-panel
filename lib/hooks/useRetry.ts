@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 
 export interface RetryOptions {
   maxAttempts?: number
@@ -44,7 +44,7 @@ export function useRetry<T extends any[], R>(
   operation: (...args: T) => Promise<R>,
   options: RetryOptions = {}
 ) {
-  const opts = { ...defaultOptions, ...options }
+  const opts = useMemo(() => ({ ...defaultOptions, ...options }), [options])
   const [state, setState] = useState<RetryState>({
     isRetrying: false,
     attempt: 0,
@@ -71,7 +71,6 @@ export function useRetry<T extends any[], R>(
       try {
         const result = await operation(...args)
 
-        // Success - reset state
         setState({
           isRetrying: false,
           attempt: 0,
@@ -95,13 +94,11 @@ export function useRetry<T extends any[], R>(
         if (shouldRetry) {
           opts.onRetry(attempt, lastError)
 
-          // Calculate delay with exponential backoff
           const delay = Math.min(
             opts.initialDelay * Math.pow(opts.backoffFactor, attempt - 1),
             opts.maxDelay
           )
 
-          // Add jitter to prevent thundering herd
           const jitteredDelay = delay + Math.random() * 1000
 
           return new Promise<R>((resolve, reject) => {

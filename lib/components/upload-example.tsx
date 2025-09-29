@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { FileUpload } from './file-upload'
 
 /**
@@ -10,21 +10,21 @@ export function UploadExample() {
   const [uploadedFiles, setUploadedFiles] = useState<{ url: string; filename: string }[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  const handleUpload = (files: { url: string; filename: string }[]) => {
+  const handleUpload = useCallback((files: { url: string; filename: string }[]) => {
     setUploadedFiles(prev => [...prev, ...files])
     setError(null)
     console.log('Files uploaded:', files)
-  }
+  }, [])
 
-  const handleError = (errorMessage: string) => {
+  const handleError = useCallback((errorMessage: string) => {
     setError(errorMessage)
     console.error('Upload error:', errorMessage)
-  }
+  }, [])
 
-  const clearUploads = () => {
+  const clearUploads = useCallback(() => {
     setUploadedFiles([])
     setError(null)
-  }
+  }, [])
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">

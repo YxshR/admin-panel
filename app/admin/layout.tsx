@@ -18,13 +18,12 @@ function AdminLayoutContent({
 }) {
   const pathname = usePathname()
   const isAuthPage = AUTH_PAGES.includes(pathname)
+  const { isLoading, isAuthenticated } = useRequireAuth()
 
   // For auth pages, render children directly without admin layout
   if (isAuthPage) {
     return <>{children}</>
   }
-
-  const { isLoading, isAuthenticated } = useRequireAuth()
 
   // Show loading while checking authentication
   if (isLoading) {

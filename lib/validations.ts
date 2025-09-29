@@ -1,17 +1,14 @@
 import { z } from 'zod'
 
-// Input sanitization helper - simplified for production builds
 export function sanitizeString(input: string): string {
-  // Basic sanitization without DOMPurify to avoid build issues
   return input
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+\s*=/gi, '') // Remove event handlers
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
     .trim()
 }
 
-// Enhanced string validation with sanitization
 const sanitizedString = (minLength: number = 1, maxLength: number = 1000) =>
   z.string()
     .min(minLength, `Must be at least ${minLength} characters`)
@@ -19,13 +16,11 @@ const sanitizedString = (minLength: number = 1, maxLength: number = 1000) =>
     .transform(sanitizeString)
     .refine(val => val.length >= minLength, `Must be at least ${minLength} characters after sanitization`)
 
-// URL validation with additional security checks
 const secureUrl = z.string()
   .url('Invalid URL')
   .refine(url => {
     try {
       const parsed = new URL(url)
-      // Block dangerous protocols
       const allowedProtocols = ['http:', 'https:']
       return allowedProtocols.includes(parsed.protocol)
     } catch {
@@ -33,17 +28,13 @@ const secureUrl = z.string()
     }
   }, 'URL must use HTTP or HTTPS protocol')
   .refine(url => {
-    // Block localhost and private IPs in production
     if (process.env.NODE_ENV === 'production') {
       const parsed = new URL(url)
       const hostname = parsed.hostname.toLowerCase()
       
-      // Block localhost
       if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
         return false
       }
-      
-      // Block private IP ranges
       const privateRanges = [
         /^10\./,
         /^172\.(1[6-9]|2[0-9]|3[0-1])\./,

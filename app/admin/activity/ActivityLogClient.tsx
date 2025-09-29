@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Search, Download, Filter, AlertTriangle, Calendar, User, Activity } from 'lucide-react'
 
 interface ActivityLog {
@@ -57,7 +57,7 @@ export default function ActivityLogClient() {
   const [endDate, setEndDate] = useState('')
   const [showSuspicious, setShowSuspicious] = useState(false)
 
-  const fetchActivities = async (page = 1) => {
+  const fetchActivities = useCallback(async (page = 1) => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -83,7 +83,7 @@ export default function ActivityLogClient() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [pagination.limit, search, actionFilter, userFilter, startDate, endDate, showSuspicious])
 
   const fetchStats = async () => {
     try {
@@ -159,7 +159,7 @@ export default function ActivityLogClient() {
   useEffect(() => {
     fetchActivities()
     fetchStats()
-  }, [])
+  }, [fetchActivities])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -167,7 +167,7 @@ export default function ActivityLogClient() {
     }, 500)
 
     return () => clearTimeout(timeoutId)
-  }, [search, actionFilter, userFilter, startDate, endDate, showSuspicious])
+  }, [search, actionFilter, userFilter, startDate, endDate, showSuspicious, fetchActivities])
 
   return (
     <div className="space-y-6">

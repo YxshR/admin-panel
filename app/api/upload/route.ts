@@ -13,7 +13,6 @@ const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || '5242880') // 5MB de
 const MAX_FILES_PER_HOUR = 50 // Rate limit per IP
 const ALLOWED_FOLDERS = ['general', 'reels', 'slider', 'thumbnails']
 
-// Simple in-memory rate limiting (use Redis in production)
 const uploadCounts = new Map<string, { count: number; resetTime: number }>()
 
 function getRateLimitKey(request: NextRequest): string {
@@ -43,7 +42,6 @@ function checkRateLimit(key: string): { allowed: boolean; remaining: number } {
 
 const uploadHandler = async (request: NextRequest) => {
   try {
-    // Rate limiting (now handled by security middleware)
     const rateLimitKey = getRateLimitKey(request)
     const rateLimit = checkRateLimit(rateLimitKey)
 
@@ -59,7 +57,6 @@ const uploadHandler = async (request: NextRequest) => {
       )
     }
 
-    // Validate folder name
     if (!ALLOWED_FOLDERS.includes(folder)) {
       return NextResponse.json(
         { success: false, error: 'Invalid folder name' },
@@ -67,7 +64,6 @@ const uploadHandler = async (request: NextRequest) => {
       )
     }
 
-    // Validate file using Zod schema
     try {
       imageUploadSchema.parse({ file, folder, optimize })
     } catch (error: any) {
@@ -81,7 +77,6 @@ const uploadHandler = async (request: NextRequest) => {
       )
     }
 
-    // Enhanced security validation
     if (hasSuspiciousFilePattern(file.name)) {
       return NextResponse.json(
         { success: false, error: 'Suspicious file pattern detected' },
@@ -89,7 +84,6 @@ const uploadHandler = async (request: NextRequest) => {
       )
     }
 
-    // Additional file validation
     const validation = validateImageFile(file, MAX_FILE_SIZE)
     if (!validation.isValid) {
       return NextResponse.json(
@@ -98,7 +92,6 @@ const uploadHandler = async (request: NextRequest) => {
       )
     }
 
-    // Convert file to buffer for security scanning
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
@@ -120,9 +113,6 @@ const uploadHandler = async (request: NextRequest) => {
       )
     }
 
-    // Buffer already created above for security scanning
-
-    // Validate image content and dimensions
     try {
       const dimensionValidation = await validateImageDimensions(buffer)
       if (!dimensionValidation.isValid) {
@@ -133,19 +123,14 @@ const uploadHandler = async (request: NextRequest) => {
       }
     } catch (validationError) {
       console.warn('Image dimension validation failed:', validationError)
-      // Continue without dimension validation in production
     }
 
-    // Generate content hash for deduplication
     const contentHash = createHash('sha256').update(buffer).digest('hex').substring(0, 16)
     
-    // Create upload directory if it doesn't exist
     const uploadPath = path.join(UPLOAD_DIR, folder)
     if (!existsSync(uploadPath)) {
       await mkdir(uploadPath, { recursive: true, mode: 0o755 })
     }
-
-    // Generate secure filename
     const timestamp = Date.now()
     const randomString = createHash('sha256')
       .update(`${timestamp}-${Math.random()}-${file.name}`)
@@ -160,7 +145,6 @@ const uploadHandler = async (request: NextRequest) => {
     const fileName = `${timestamp}-${randomString}-${contentHash}${optimize ? '.webp' : fileExtension}`
     const filePath = path.join(uploadPath, fileName)
 
-    // Check if file already exists (deduplication)
     if (existsSync(filePath)) {
       const stats = await stat(filePath)
       return NextResponse.json({
@@ -173,7 +157,6 @@ const uploadHandler = async (request: NextRequest) => {
       })
     }
 
-    // Optimize image if requested
     let finalBuffer: Buffer = buffer
     if (optimize) {
       try {
@@ -187,10 +170,8 @@ const uploadHandler = async (request: NextRequest) => {
       }
     }
 
-    // Write file to disk with secure permissions
     await writeFile(filePath, finalBuffer, { mode: 0o644 })
 
-    // Return public URL
     const publicUrl = `/uploads/${folder}/${fileName}`
 
     return NextResponse.json({
@@ -216,7 +197,6 @@ const uploadHandler = async (request: NextRequest) => {
   }
 }
 
-// Apply security middleware
 export const POST = withSecurity(uploadHandler, {
   enableRateLimit: true,
   enableCSRF: true,
@@ -227,7 +207,6 @@ export const POST = withSecurity(uploadHandler, {
 
 export async function DELETE(request: NextRequest) {
   try {
-    // Rate limiting for deletions
     const rateLimitKey = getRateLimitKey(request)
     const rateLimit = checkRateLimit(rateLimitKey)
     
@@ -248,7 +227,6 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Validate file path format
     const pathRegex = /^\/uploads\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/
     if (!pathRegex.test(filePath)) {
       return NextResponse.json(
@@ -256,8 +234,6 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    // Security check: ensure path is within uploads directory
     const relativePath = filePath.replace('/uploads/', '')
     const fullPath = path.join(UPLOAD_DIR, relativePath)
     const normalizedPath = path.normalize(fullPath)
@@ -270,7 +246,6 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Additional security: check if path contains suspicious patterns
     const suspiciousPatterns = [
       /\.\./,
       /\/\.\//,
@@ -285,7 +260,6 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Delete file if it exists
     if (existsSync(normalizedPath)) {
       await unlink(normalizedPath)
     }

@@ -1,4 +1,3 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -14,20 +13,18 @@ const nextConfig = {
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     dangerouslyAllowSVG: false,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   serverExternalPackages: ['@prisma/client', 'prisma'],
   webpack: (config, { isServer }) => {
-    // Only apply webpack config when not using Turbopack
     if (!process.env.TURBOPACK) {
       config.externals.push('@prisma/client');
     }
     return config;
   },
-  // Security headers
   async headers() {
     return [
       {
@@ -104,15 +101,11 @@ const nextConfig = {
       }
     ]
   },
-  // Experimental features for performance
   experimental: {
     optimizePackageImports: ['lucide-react', 'clsx'],
   },
-  // Compression
   compress: true,
-  // Power optimizations
   poweredByHeader: false,
-  // Generate ETags for better caching
   generateEtags: true,
 };
 

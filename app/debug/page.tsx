@@ -9,13 +9,11 @@ export default function DebugPage() {
   const [dashboardStats, setDashboardStats] = useState<any>(null)
 
   useEffect(() => {
-    // Test health check
     fetch('/api/health')
       .then(res => res.json())
       .then(data => setHealthCheck(data))
       .catch(err => setHealthCheck({ error: err.message }))
 
-    // Test dashboard stats if authenticated
     if (session) {
       fetch('/api/dashboard/stats')
         .then(res => res.json())

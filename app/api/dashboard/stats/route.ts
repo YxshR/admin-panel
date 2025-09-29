@@ -11,10 +11,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Cache key for dashboard stats
     const cacheKey = 'dashboard:stats'
     
-    // Try to get from cache first (cache for 1 minute)
     const { serverCache } = await import('@/lib/cache')
     const cachedStats = serverCache.get(cacheKey)
     
@@ -22,7 +20,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cachedStats)
     }
 
-    // Get dashboard statistics with optimized queries
     const [
       totalImages,
       totalCategories,
@@ -30,23 +27,17 @@ export async function GET(request: NextRequest) {
       totalStorage,
       recentImages
     ] = await Promise.all([
-      // Total images count
       prisma.image.count(),
       
-      // Total categories count
       prisma.category.count(),
       
-      // Total users count
       prisma.user.count(),
       
-      // Total storage used (sum of all image file sizes)
       prisma.image.aggregate({
         _sum: {
           fileSize: true
         }
       }),
-      
-      // Recent images for activity feed - optimized with select
       prisma.image.findMany({
         take: 10,
         orderBy: {

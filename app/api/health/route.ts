@@ -9,12 +9,10 @@ export async function GET() {
   try {
     const startTime = Date.now();
     
-    // Check database connectivity
     await prisma.$queryRaw`SELECT 1`;
     
     const dbResponseTime = Date.now() - startTime;
     
-    // Get basic system info
     const healthData = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
