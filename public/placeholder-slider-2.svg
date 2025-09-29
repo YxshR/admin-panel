@@ -1,0 +1,11 @@
+<svg width="800" height="400" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="400" fill="url(#gradient2)"/>
+  <defs>
+    <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <text x="400" y="200" text-anchor="middle" fill="white" font-size="32" font-family="Arial, sans-serif">AI Reels Slider 2</text>
+  <text x="400" y="240" text-anchor="middle" fill="white" font-size="16" font-family="Arial, sans-serif">Professional Branding</text>
+</svg>
