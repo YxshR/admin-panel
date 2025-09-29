@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
       // Upload to Cloudinary
       uploadResult = await uploadToCloudinary(buffer, {
         folder: 'admin-panel/images',
-        tags: ['admin-panel', ...validatedData.tags],
+        tags: ['admin-panel', validatedData.tags].filter(Boolean),
       })
       
       // Generate thumbnail URL
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
       const { uploadToLocalStorage, generateLocalThumbnailUrl } = await import('@/lib/local-storage')
       uploadResult = await uploadToLocalStorage(buffer, {
         folder: 'admin-panel/images',
-        tags: ['admin-panel', ...validatedData.tags],
+        tags: ['admin-panel', validatedData.tags].filter(Boolean),
       })
       
       thumbnailUrl = generateLocalThumbnailUrl(uploadResult.public_id, 300, 300)
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
       data: {
         title: validatedData.title,
         description: validatedData.description,
-        tags: validatedData.tags.join(', '),
+        tags: validatedData.tags,
         cloudinaryId: uploadResult.public_id,
         thumbnailUrl,
         originalUrl: uploadResult.secure_url,
